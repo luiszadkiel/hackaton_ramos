@@ -60,7 +60,6 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
     } else {
       setSelectedItems(selectedItems.filter((selected) => selected.id !== itemId))
     }
-    console.log("estamos borrandsssssso")
     toast.error(`El articulo ha sido Borrado`)
   }
 
@@ -105,8 +104,9 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
     const existingOrders = JSON.parse(localStorage.getItem("clientOrders") || "[]")
     // const updatedOrders = [...existingOrders, newOrder]
     // localStorage.setItem("clientOrders", JSON.stringify(updatedOrders))
-
+    console.log(newOrder.items)
     onOrderCreated(newOrder)
+   
     onClose()
   }
 

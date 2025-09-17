@@ -83,7 +83,7 @@ export default function ClienteDashboard() {
     const existingOrders = savedOrders ? JSON.parse(savedOrders) : []
     const updatedOrders = [newOrder, ...existingOrders]
     localStorage.setItem("clientOrders", JSON.stringify(updatedOrders))
-    setOrders(updatedOrders)
+    setOrders([...orders, newOrder])
 
     window.dispatchEvent(new Event("storage"))
   }
@@ -152,80 +152,31 @@ export default function ClienteDashboard() {
               Nuevo Pedido
             </Button>
 
-            {orders.length > 0 ? (
-              orders.slice(0, 2).map((order, index) => (
-                <Card key={order.id} className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-slate-800 dark:text-white">Pedido {order.id}</h3>
-                    <Badge className={getStatusColor(order.status)}>{getStatusText(order.status)}</Badge>
-                  </div>
-
-                  <div className="space-y-3 mb-4">
-                    <div className="text-sm text-slate-600 dark:text-slate-300">
-                      <strong>Prendas:</strong> {order.items.map((item) => `${item.quantity} ${item.type}`).join(", ")}
-                    </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-300">
-                      <strong>Total:</strong> S/ {order.total.toFixed(2)}
-                    </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-300">
-                      <strong>Creado:</strong> {new Date(order.createdAt).toLocaleDateString("es-ES")}
-                    </div>
-                  </div>
-
-                  {(order.status === "en_proceso" || order.status === "En Proceso") && (
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        {orderStages.map((stage, stageIndex) => {
-                          const IconComponent = stage.icon
-                          return (
-                            <div key={stageIndex} className="flex flex-col items-center space-y-2">
-                              <div
-                                className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                  stage.completed
-                                    ? "bg-green-500 text-white"
-                                    : stageIndex === 2
-                                      ? "bg-blue-500 text-white"
-                                      : "bg-slate-200 dark:bg-slate-600 text-slate-400"
-                                }`}
-                              >
-                                <IconComponent className="h-5 w-5" />
-                              </div>
-                              <span
-                                className={`text-xs text-center ${
-                                  stage.completed || stageIndex === 2
-                                    ? "text-slate-800 dark:text-white font-medium"
-                                    : "text-slate-400"
-                                }`}
-                              >
-                                {stage.label}
-                              </span>
-                            </div>
-                          )
-                        })}
+            {
+              orders.length > 0 ? (
+                <Card className="p-6">
+                {orders?.length
+                  ? orders.map((order, oi) => (
+                      <div key={order.id + oi} className="mb-3">
+                        {Array.isArray(order.items) && order.items.length > 0 ? (
+                          order.items.map((articulo, ai) => (
+                            <p key={`${order.id ?? oi}-${ai}`}>{articulo.type}</p>
+                          ))
+                        ) : (
+                          <p className="text-sm text-slate-500"></p>
+                        )}
                       </div>
-                      <Progress value={40} className="h-2" />
-                      <p className="text-center text-sm text-slate-600 dark:text-slate-300">ETA: 2 horas 30 min</p>
-                    </div>
-                  )}
-                </Card>
-              ))
-            ) : (
-              <Card className="p-6 text-center">
-                <Package className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                <h3 className="font-semibold text-slate-800 dark:text-white mb-2">No tienes pedidos aún</h3>
-                <p className="text-slate-600 dark:text-slate-300">Crea tu primer pedido para comenzar</p>
+                    ))
+                  : <p>No hay pedidos</p>}
               </Card>
-            )}
+              
+               
+              ): <p>El carrito esta vacio</p>
+            }
+          
+            
 
-            {orders.length > 2 && (
-              <Button
-                variant="outline"
-                className="w-full bg-transparent"
-                onClick={() => router.push("/cliente/pedidos")}
-              >
-                Ver todos los pedidos ({orders.length})
-              </Button>
-            )}
+
 
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -276,7 +227,7 @@ export default function ClienteDashboard() {
           </Button>
         </div>
       </div>
-
+       
       <div className="p-4 pb-20">{renderContent()}</div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
@@ -289,14 +240,14 @@ export default function ClienteDashboard() {
             <Home className="h-5 w-5 mb-1" />
             <span className="text-xs">Inicio</span>
           </Button>
-          <Button
+          {/* <Button
             variant="ghost"
             className="flex flex-col items-center py-3"
             onClick={() => router.push("/cliente/pedidos")}
           >
             <Calendar className="h-5 w-5 mb-1" />
             <span className="text-xs">Pedidos</span>
-          </Button>
+          </Button> */}
           <Button
             variant="ghost"
             className={`flex flex-col items-center py-3 ${activeTab === "rewards" ? "text-blue-500" : ""}`}

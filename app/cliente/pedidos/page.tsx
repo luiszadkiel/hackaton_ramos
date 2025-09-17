@@ -254,7 +254,7 @@ export default function PedidosPage() {
 
               <div className="bg-slate-50 rounded-lg p-4 mb-4">
                 <h4 className="font-medium text-slate-800 mb-3">Artículos del pedido</h4>
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   {order.items.map((item, index) => (
                     <div key={index} className="flex justify-between items-center">
                       <div className="flex items-center space-x-2">
@@ -268,7 +268,7 @@ export default function PedidosPage() {
                       </Badge>
                     </div>
                   ))}
-                </div>
+                </div> */}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -303,10 +303,10 @@ export default function PedidosPage() {
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-                <div>
+                {/* <div>
                   <p className="text-sm text-slate-600">Total del pedido</p>
                   <p className="text-xl font-bold text-slate-800">S/ {order.total.toFixed(2)}</p>
-                </div>
+                </div> */}
                 <div className="flex space-x-2">
                   <Button
                     size="sm"
