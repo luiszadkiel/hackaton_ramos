@@ -103,8 +103,8 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
     }
 
     const existingOrders = JSON.parse(localStorage.getItem("clientOrders") || "[]")
-    const updatedOrders = [...existingOrders, newOrder]
-    localStorage.setItem("clientOrders", JSON.stringify(updatedOrders))
+    // const updatedOrders = [...existingOrders, newOrder]
+    // localStorage.setItem("clientOrders", JSON.stringify(updatedOrders))
 
     onOrderCreated(newOrder)
     onClose()
