@@ -60,6 +60,8 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
     } else {
       setSelectedItems(selectedItems.filter((selected) => selected.id !== itemId))
     }
+    console.log("estamos borrandsssssso")
+    toast.error(`El articulo ha sido Borrado`)
   }
 
   const calculateTotal = () => {
