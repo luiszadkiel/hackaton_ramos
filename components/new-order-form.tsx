@@ -106,8 +106,6 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
     const updatedOrders = [...existingOrders, newOrder]
     localStorage.setItem("clientOrders", JSON.stringify(updatedOrders))
 
-    window.dispatchEvent(new Event("storage"))
-
     onOrderCreated(newOrder)
     onClose()
   }
