@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { X, Plus, Minus, Calendar, MapPin, Check } from "lucide-react"
+import toast from "react-hot-toast"
 
 interface NewOrderFormProps {
   onClose: () => void
@@ -45,6 +46,7 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
     } else {
       setSelectedItems([...selectedItems, { ...item, quantity: 1 }])
     }
+    toast.success(`${item.name} ha sido agregado`)
   }
 
   const removeItem = (itemId: number) => {

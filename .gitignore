@@ -1,0 +1,14 @@
+# dependencias
+node_modules/
+
+# archivos de build de Next.js
+.next/
+
+# logs
+npm-debug.log
+yarn-error.log
+*.log
+
+# entorno
+.env
+*.env.local
