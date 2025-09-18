@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import Groq from "groq-sdk"
-import "dotenv/config";
 
 const SYSTEM_PROMPT = `# Prompt para Asistente de Servicio de Lavandería
 # Prompt para Asistente de Servicio de Lavandería (Versión Breve)
