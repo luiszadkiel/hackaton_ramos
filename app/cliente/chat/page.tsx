@@ -2,22 +2,52 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Send, Bot, User, Camera, Mic, MicOff, ImageIcon } from "lucide-react"
+import { ArrowLeft, Send, Bot, User, Camera, Mic, MicOff, ImageIcon, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useAudioRecorder } from "@/hooks/useAudioRecorder"
+import { useTextToSpeech } from "@/hooks/useTextToSpeech"
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition"
+import { AudioMessage } from "@/components/audio-message"
+import { TextMessage } from "@/components/text-message"
 
 interface Message {
   id: string
-  text: string
+  text?: string
+  audioUrl?: string
   sender: "user" | "bot"
   timestamp: Date
+  transcript?: string
 }
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState("")
   const [isListening, setIsListening] = useState(false)
+  const [isProcessingAudio, setIsProcessingAudio] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  
+  const {
+    isRecording,
+    recordingTime,
+    audioBlob,
+    audioUrl,
+    startRecording,
+    stopRecording,
+    resetRecording,
+    formatTime,
+  } = useAudioRecorder()
+
+  const { speak, stop: stopTTS } = useTextToSpeech()
+  
+  const {
+    isListening: isTranscribing,
+    transcript: speechTranscript,
+    isSupported: speechSupported,
+    startListening: startSpeechRecognition,
+    stopListening: stopSpeechRecognition,
+    resetTranscript: resetSpeechTranscript,
+  } = useSpeechRecognition()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -42,7 +72,7 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMessage])
     setInputText("")
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch("/api/chat-text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userMessage.text }),
@@ -56,9 +86,113 @@ export default function ChatPage() {
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, botMessage])
+        
+        // NO usar TTS automático para mensajes de texto
       }
     } catch (e) {
       console.error("Error llamando /api/chat:", e)
+    }
+  }
+
+  const sendAudioMessage = async () => {
+    if (!audioBlob) return
+
+    setIsProcessingAudio(true)
+    
+    // Crear una copia del audio URL para el mensaje del usuario
+    const userAudioUrl = audioUrl ? URL.createObjectURL(audioBlob) : undefined
+    
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      audioUrl: userAudioUrl,
+      sender: "user",
+      timestamp: new Date(),
+    }
+
+    setMessages((prev) => [...prev, userMessage])
+    resetRecording()
+
+    try {
+      // Usar el endpoint simple que funciona
+      const formData = new FormData()
+      formData.append('file', audioBlob, 'audio.webm')
+
+      console.log('Enviando audio al servidor...')
+      const res = await fetch("/api/chat-audio-debug", {
+        method: "POST",
+        body: formData,
+      })
+
+      console.log('Respuesta del servidor:', res.status)
+      
+      if (res.ok) {
+        const data = await res.json()
+        console.log('Datos recibidos:', data)
+        
+        const transcript = data.transcript || ''
+        const replyText = data.reply || ''
+        
+        console.log('Transcripción:', transcript)
+        console.log('Respuesta del bot:', replyText)
+
+        // Mostrar la transcripción del audio del usuario
+        const userTranscriptMessage: Message = {
+          id: `${Date.now()}-transcript`,
+          text: `🎤 ${transcript}`,
+          sender: "user",
+          timestamp: new Date(),
+        }
+
+        console.log('Agregando mensaje de transcripción:', userTranscriptMessage)
+
+        const botMessage: Message = {
+          id: `${Date.now()}`,
+          text: replyText,
+          sender: "bot",
+          timestamp: new Date(),
+          transcript: transcript,
+        }
+        
+        console.log('Agregando mensaje del bot:', botMessage)
+        
+        setMessages((prev) => {
+          console.log('Mensajes anteriores:', prev.length)
+          const newMessages = [...prev, userTranscriptMessage, botMessage]
+          console.log('Nuevos mensajes:', newMessages.length)
+          return newMessages
+        })
+        
+        // Usar TTS del navegador para reproducir la respuesta
+        if (replyText) {
+          console.log('Reproduciendo TTS:', replyText)
+          speak(replyText, { rate: 0.9, pitch: 1, volume: 1 })
+        } else {
+          console.log('No hay texto para reproducir')
+        }
+      } else {
+        const errorText = await res.text()
+        console.error('Error del servidor:', errorText)
+        
+        // Si hay error, mostrar mensaje de error
+        const errorMessage: Message = {
+          id: `${Date.now()}`,
+          text: `Error del servidor: ${res.status}. ${errorText}`,
+          sender: "bot",
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, errorMessage])
+      }
+    } catch (e) {
+      console.error("Error enviando audio:", e)
+      const errorMessage: Message = {
+        id: `${Date.now()}`,
+        text: `Error de conexión: ${e.message}`,
+        sender: "bot",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setIsProcessingAudio(false)
     }
   }
 
@@ -66,9 +200,17 @@ export default function ChatPage() {
     setInputText(suggestion)
   }
 
-  const toggleVoiceRecording = () => {
-    setIsListening(!isListening)
-    // Aquí se implementaría la funcionalidad de reconocimiento de voz
+  const toggleVoiceRecording = async () => {
+    if (isRecording) {
+      stopRecording()
+    } else {
+      try {
+        await startRecording()
+      } catch (error) {
+        console.error('Error starting recording:', error)
+        alert('No se pudo acceder al micrófono. Por favor, verifica los permisos.')
+      }
+    }
   }
 
   const renderMessage = (message: Message) => {
@@ -91,19 +233,26 @@ export default function ChatPage() {
           </div>
 
           {/* Message Content */}
-          <div
-            className={`rounded-2xl px-4 py-3 ${
-              isUser
-                ? "bg-blue-500 text-white"
-                : "bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm border border-slate-200 dark:border-slate-600"
-            }`}
-          >
-            <p className="text-sm leading-relaxed">{message.text}</p>
-
+          <div className="flex flex-col space-y-1">
+            {message.audioUrl && isUser ? (
+              <AudioMessage 
+                audioUrl={message.audioUrl}
+                isUser={isUser}
+                timestamp={message.timestamp}
+                transcript={message.transcript}
+              />
+            ) : (
+              <TextMessage
+                text={message.text || ""}
+                isUser={isUser}
+                timestamp={message.timestamp}
+                onSpeak={!isUser ? (text) => speak(text, { rate: 0.9, pitch: 1, volume: 1 }) : undefined}
+                onStop={!isUser ? stopTTS : undefined}
+              />
+            )}
             
-
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs opacity-70">
+            <div className="flex items-center justify-between">
+              <span className={`text-xs opacity-70 ${isUser ? "text-right" : "text-left"}`}>
                 {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </span>
             </div>
@@ -151,14 +300,50 @@ export default function ChatPage() {
 
       {/* Input Area */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4">
+        {/* Audio Recording Preview */}
+        {audioUrl && (
+          <div className="mb-3 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                  <Mic className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Grabación de audio</p>
+                  <p className="text-xs text-slate-500">{formatTime(recordingTime)}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetRecording}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={sendAudioMessage}
+                  size="sm"
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                  disabled={isProcessingAudio}
+                >
+                  {isProcessingAudio ? "Enviando..." : "Enviar"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center space-x-2">
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleVoiceRecording}
-            className={isListening ? "bg-red-100 text-red-600" : ""}
+            className={isRecording ? "bg-red-100 text-red-600" : ""}
+            disabled={isProcessingAudio}
           >
-            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           </Button>
 
           <div className="flex-1 relative">
@@ -169,7 +354,7 @@ export default function ChatPage() {
               onKeyPress={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Pregúntame sobre tu ropa, pedidos, cuidados..."
               className="w-full px-4 py-3 pr-12 border border-slate-300 dark:border-slate-600 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
-              disabled={false}
+              disabled={isProcessingAudio}
             />
             <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 transform -translate-y-1/2">
               <ImageIcon className="h-4 w-4" />
@@ -180,17 +365,26 @@ export default function ChatPage() {
             onClick={sendMessage}
             size="icon"
             className="bg-blue-500 hover:bg-blue-600 text-white rounded-full"
-            disabled={!inputText.trim()}
+            disabled={!inputText.trim() || isProcessingAudio}
           >
             <Send className="h-4 w-4" />
           </Button>
         </div>
 
-        {isListening && (
+        {isRecording && (
           <div className="flex items-center justify-center mt-2">
             <div className="flex items-center space-x-2 text-red-600">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="text-xs">Escuchando...</span>
+              <span className="text-xs">Grabando... {formatTime(recordingTime)}</span>
+            </div>
+          </div>
+        )}
+
+        {isProcessingAudio && (
+          <div className="flex items-center justify-center mt-2">
+            <div className="flex items-center space-x-2 text-blue-600">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <span className="text-xs">Procesando audio...</span>
             </div>
           </div>
         )}
