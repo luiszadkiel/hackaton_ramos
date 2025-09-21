@@ -30,3 +30,5 @@ console.log('   - Respuestas dinámicas del bot');
 console.log('   - Audio del usuario se guarda correctamente');
 
 console.log('\n🎉 ¡El chat está completamente funcional y limpio!');
+
+

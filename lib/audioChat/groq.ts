@@ -31,3 +31,5 @@ export async function ttsGroq(text: string, voice = "Fritz-PlayAI", format: "wav
   if (!r.ok) throw new Error(`Groq TTS failed: ${await r.text()}`);
   return Buffer.from(await r.arrayBuffer());
 }
+
+

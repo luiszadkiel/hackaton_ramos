@@ -6,9 +6,8 @@ import { ArrowLeft, Send, Bot, User, Camera, Mic, MicOff, ImageIcon, Trash2 } fr
 import { useRouter } from "next/navigation"
 import { useAudioRecorder } from "@/hooks/useAudioRecorder"
 import { useTextToSpeech } from "@/hooks/useTextToSpeech"
-import { useSpeechRecognition } from "@/hooks/useSpeechRecognition"
 import { AudioMessage } from "@/components/audio-message"
-import { TextMessage } from "@/components/text-message"
+import { TTSControls } from "@/components/tts-controls"
 
 interface Message {
   id: string
@@ -39,15 +38,6 @@ export default function ChatPage() {
   } = useAudioRecorder()
 
   const { speak, stop: stopTTS } = useTextToSpeech()
-  
-  const {
-    isListening: isTranscribing,
-    transcript: speechTranscript,
-    isSupported: speechSupported,
-    startListening: startSpeechRecognition,
-    stopListening: stopSpeechRecognition,
-    resetTranscript: resetSpeechTranscript,
-  } = useSpeechRecognition()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -61,7 +51,7 @@ export default function ChatPage() {
 
   const sendMessage = async () => {
     if (!inputText.trim()) return
-
+    
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputText,
@@ -72,9 +62,12 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMessage])
     setInputText("")
     try {
-      const res = await fetch("/api/chat-text", {
+      const res = await fetch("/api/chat", {  // Cambiado de /api/chat-text a /api/chat
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-groq-key": "gsk_test_key_for_demo"  // API key temporal para pruebas
+        },
         body: JSON.stringify({ message: userMessage.text }),
       })
       if (res.ok) {
@@ -87,16 +80,25 @@ export default function ChatPage() {
         }
         setMessages((prev) => [...prev, botMessage])
         
-        // NO usar TTS automático para mensajes de texto
+        // Usar TTS del navegador para reproducir la respuesta
+        if (data?.message) {
+          speak(data.message, { rate: 0.9, pitch: 1, volume: 1 })
+        }
       }
     } catch (e) {
       console.error("Error llamando /api/chat:", e)
+      const errorMessage: Message = {
+        id: `${Date.now()}`,
+        text: "Error de conexión. Por favor, verifica que la API key de Groq esté configurada.",
+        sender: "bot",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
     }
   }
 
   const sendAudioMessage = async () => {
     if (!audioBlob) return
-
     setIsProcessingAudio(true)
     
     // Crear una copia del audio URL para el mensaje del usuario
@@ -113,37 +115,18 @@ export default function ChatPage() {
     resetRecording()
 
     try {
-      // Usar el endpoint simple que funciona
       const formData = new FormData()
       formData.append('file', audioBlob, 'audio.webm')
 
-      console.log('Enviando audio al servidor...')
-      const res = await fetch("/api/chat-audio-debug", {
+      const res = await fetch("/api/chat-audio-debug", {  // Cambiado de /api/chat-audio-test a /api/chat-audio-debug
         method: "POST",
         body: formData,
       })
 
-      console.log('Respuesta del servidor:', res.status)
-      
       if (res.ok) {
         const data = await res.json()
-        console.log('Datos recibidos:', data)
-        
         const transcript = data.transcript || ''
         const replyText = data.reply || ''
-        
-        console.log('Transcripción:', transcript)
-        console.log('Respuesta del bot:', replyText)
-
-        // Mostrar la transcripción del audio del usuario
-        const userTranscriptMessage: Message = {
-          id: `${Date.now()}-transcript`,
-          text: `🎤 ${transcript}`,
-          sender: "user",
-          timestamp: new Date(),
-        }
-
-        console.log('Agregando mensaje de transcripción:', userTranscriptMessage)
 
         const botMessage: Message = {
           id: `${Date.now()}`,
@@ -153,40 +136,28 @@ export default function ChatPage() {
           transcript: transcript,
         }
         
-        console.log('Agregando mensaje del bot:', botMessage)
-        
-        setMessages((prev) => {
-          console.log('Mensajes anteriores:', prev.length)
-          const newMessages = [...prev, userTranscriptMessage, botMessage]
-          console.log('Nuevos mensajes:', newMessages.length)
-          return newMessages
-        })
+        setMessages((prev) => [...prev, botMessage])
         
         // Usar TTS del navegador para reproducir la respuesta
         if (replyText) {
-          console.log('Reproduciendo TTS:', replyText)
           speak(replyText, { rate: 0.9, pitch: 1, volume: 1 })
-        } else {
-          console.log('No hay texto para reproducir')
         }
       } else {
-        const errorText = await res.text()
-        console.error('Error del servidor:', errorText)
-        
-        // Si hay error, mostrar mensaje de error
+        // Si hay error, mostrar mensaje de error específico
+        const errorData = await res.json().catch(() => ({}))
         const errorMessage: Message = {
           id: `${Date.now()}`,
-          text: `Error del servidor: ${res.status}. ${errorText}`,
+          text: errorData.details || `Error ${res.status}: ${res.statusText}. Verifica que la API key de Groq esté configurada.`,
           sender: "bot",
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, errorMessage])
       }
-    } catch (error: any) {
-      console.error("Error enviando audio:", error)
+    } catch (e) {
+      console.error("Error enviando audio:", e)
       const errorMessage: Message = {
         id: `${Date.now()}`,
-        text: `Error de conexión: ${error.message}`,
+        text: "Error de conexión. Por favor, intenta de nuevo.",
         sender: "bot",
         timestamp: new Date(),
       }
@@ -234,7 +205,7 @@ export default function ChatPage() {
 
           {/* Message Content */}
           <div className="flex flex-col space-y-1">
-            {message.audioUrl && isUser ? (
+            {message.audioUrl ? (
               <AudioMessage 
                 audioUrl={message.audioUrl}
                 isUser={isUser}
@@ -242,13 +213,25 @@ export default function ChatPage() {
                 transcript={message.transcript}
               />
             ) : (
-              <TextMessage
-                text={message.text || ""}
-                isUser={isUser}
-                timestamp={message.timestamp}
-                onSpeak={!isUser ? (text) => speak(text, { rate: 0.9, pitch: 1, volume: 1 }) : undefined}
-                onStop={!isUser ? stopTTS : undefined}
-              />
+              <div
+                className={`rounded-2xl px-4 py-3 ${
+                  isUser
+                    ? "bg-blue-500 text-white"
+                    : "bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm border border-slate-200 dark:border-slate-600"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <p className="text-sm leading-relaxed flex-1">{message.text}</p>
+                  {!isUser && message.text && (
+                    <TTSControls
+                      text={message.text}
+                      onSpeak={(text) => speak(text, { rate: 0.9, pitch: 1, volume: 1 })}
+                      onStop={stopTTS}
+                      className="ml-2 flex-shrink-0"
+                    />
+                  )}
+                </div>
+              </div>
             )}
             
             <div className="flex items-center justify-between">

@@ -46,3 +46,5 @@ export function TTSControls({ text, onSpeak, onStop, className = "" }: TTSContro
     </Button>
   );
 }
+
+

@@ -28,3 +28,5 @@ console.log('2. Cambia /api/chat-audio-test por /api/chat-audio en el componente
 console.log('3. Reinicia el servidor');
 
 console.log('\n🎉 ¡El chat con audio está listo para usar!');
+
+

@@ -78,3 +78,5 @@ async function sttDeepgramDirect(buffer: Buffer, mime: string | undefined): Prom
   const transcript = data.results?.channels?.[0]?.alternatives?.[0]?.transcript ?? "";
   return { transcript, mime: contentType };
 }
+
+

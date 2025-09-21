@@ -32,3 +32,5 @@ console.log('   - Error en el envío al servidor');
 console.log('   - Problema con el TTS del navegador');
 
 console.log('\n🎯 El sistema debería funcionar ahora!');
+
+

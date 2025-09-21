@@ -1,13 +1,13 @@
-// Script de prueba para el endpoint simple de audio
-// Uso: node scripts/test-audio-simple.js
+// Script de prueba para el audio corregido
+// Uso: node scripts/test-audio-fixed.js
 
-async function testAudioSimple() {
-  console.log('🧪 Probando Endpoint Simple de Audio');
-  console.log('====================================');
+async function testAudioFixed() {
+  console.log('🧪 Probando audio corregido...');
+  console.log('==============================');
   
   try {
     // Crear un archivo de audio simulado
-    const audioData = new Uint8Array(1000); // 1KB de datos simulados
+    const audioData = new Uint8Array(1000);
     const audioBlob = new Blob([audioData], { type: 'audio/webm' });
     
     const formData = new FormData();
@@ -15,7 +15,7 @@ async function testAudioSimple() {
     
     console.log('📤 Enviando audio simulado...');
     
-    const response = await fetch('http://localhost:3000/api/chat-audio-simple', {
+    const response = await fetch('http://localhost:3000/api/chat-audio-debug', {
       method: 'POST',
       body: formData,
     });
@@ -24,20 +24,19 @@ async function testAudioSimple() {
     
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Respuesta exitosa!');
+      console.log('✅ ¡Funciona!');
       console.log('📝 Transcripción:', data.transcript);
-      console.log('🤖 Respuesta del bot:', data.reply);
-      console.log('🎉 El endpoint funciona correctamente!');
+      console.log('🤖 Respuesta:', data.reply);
+      console.log('🎵 Audio generado:', data.audio ? 'Sí' : 'No');
+      console.log('🔍 Debug info:', data.debug);
     } else {
       const error = await response.text();
       console.log('❌ Error:', response.status, error);
     }
   } catch (error) {
     console.log('❌ Error de conexión:', error.message);
-    console.log('💡 Asegúrate de que el servidor esté ejecutándose en http://localhost:3000');
+    console.log('💡 Asegúrate de que el servidor esté corriendo: npm run dev');
   }
 }
 
-testAudioSimple();
-
-
+testAudioFixed();
