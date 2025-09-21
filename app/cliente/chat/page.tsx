@@ -182,11 +182,11 @@ export default function ChatPage() {
         }
         setMessages((prev) => [...prev, errorMessage])
       }
-    } catch (e) {
-      console.error("Error enviando audio:", e)
+    } catch (error: any) {
+      console.error("Error enviando audio:", error)
       const errorMessage: Message = {
         id: `${Date.now()}`,
-        text: `Error de conexión: ${e.message}`,
+        text: `Error de conexión: ${error.message}`,
         sender: "bot",
         timestamp: new Date(),
       }
