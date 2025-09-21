@@ -1,0 +1,42 @@
+[33mcommit 25d9949ba0094a765d3f6523c87eebff4d68c7fa[m
+Author: Luis Zadkiel Duran Aracena <20231954@itla.edu.do>
+Date:   Sun Sep 21 00:06:54 2025 -0400
+
+    audio chatbot
+
+.env
+.gitignore
+AUDIO_CHAT_SETUP.md
+app/admin/machine-management/[orderId]/page.tsx
+app/api/chat-audio-browser/route.ts
+app/api/chat-audio-debug/route.ts
+app/api/chat-audio-real/route.ts
+app/api/chat-audio-simple/route.ts
+app/api/chat-audio-test/route.ts
+app/api/chat-audio/route.ts
+app/api/chat-text/route.ts
+app/cliente/chat/page.tsx
+components/audio-message.tsx
+components/text-message.tsx
+components/tts-controls.tsx
+hooks/useAudioRecorder.ts
+hooks/useSpeechRecognition.ts
+hooks/useTextToSpeech.ts
+lib/audioChat/groq.ts
+lib/audioChat/processAudio.ts
+lib/audioChat/processAudioSimple.ts
+lib/audioChat/wsServer.ts
+package-lock.json
+package.json
+scripts/debug-audio.js
+scripts/diagnose-frontend.js
+scripts/setup-api-keys.js
+scripts/test-audio-api.js
+scripts/test-audio-chat.js
+scripts/test-audio-debug.js
+scripts/test-audio-simple.js
+scripts/test-chat.js
+scripts/test-clean-chat.js
+scripts/test-real-audio.js
+scripts/test-simple.js
+scripts/test-tts.js
