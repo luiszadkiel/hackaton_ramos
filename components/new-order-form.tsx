@@ -43,8 +43,34 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
     { id: 6, name: "Blusa", price: 16, icon: "👚" },
   ]
 
-  // Usar servicios reales de la API
-  const services = serviciosData?.data || []
+  // Servicios predefinidos
+  const predefinedServices = [
+    {
+      id_servicio: "lavar",
+      nombre: "Lavar",
+      descripcion: "Servicio completo de lavado",
+      precio_base: 0,
+      icon: "🧽"
+    },
+    {
+      id_servicio: "planchar",
+      nombre: "Planchar",
+      descripcion: "Servicio de planchado",
+      precio_base: 0,
+      icon: "👔"
+    },
+    {
+      id_servicio: "solo_planchar",
+      nombre: "Solo Planchar",
+      descripcion: "Solo servicio de planchado (sin lavado)",
+      precio_base: 0,
+      icon: "✨"
+    }
+  ]
+
+  // Usar servicios reales de la API + servicios predefinidos
+  const apiServices = serviciosData?.data || []
+  const services = [...predefinedServices, ...apiServices]
   const extras = extrasData?.data || []
 
   const addItem = (item: any) => {
@@ -89,7 +115,34 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
         return
       }
 
+      // Validar email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(customerData.email)) {
+        toast.error("Por favor ingresa un email válido")
+        return
+      }
+
+      // Validar que se haya seleccionado un servicio
+      if (!selectedService) {
+        toast.error("Por favor selecciona un servicio")
+        return
+      }
+
+      // Validar que se haya seleccionado al menos un artículo
+      if (selectedItems.length === 0) {
+        toast.error("Por favor selecciona al menos un artículo")
+        return
+      }
+
       // Crear usuario primero
+      console.log("Creating usuario with data:", {
+        nombre: customerData.nombre,
+        email: customerData.email,
+        telefono: customerData.telefono,
+        direccion: address,
+        rol: "cliente"
+      })
+      
       const usuario = await createUsuario.post({
         nombre: customerData.nombre,
         email: customerData.email,
@@ -98,8 +151,13 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
         rol: "cliente"
       })
 
+      console.log("Usuario creation result:", usuario)
+      console.log("Usuario creation error:", createUsuario.error)
+
       if (!usuario) {
-        toast.error("Error al crear el usuario")
+        const errorMessage = createUsuario.error || "Error al crear el usuario"
+        toast.error(errorMessage)
+        console.error("Error creating usuario:", createUsuario.error)
         return
       }
 
@@ -119,10 +177,17 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
         tiempo_estimado: "2 horas 30 min"
       }
 
+      console.log("Creating orden with data:", ordenData)
+      
       const nuevaOrden = await createOrden.post(ordenData)
 
+      console.log("Orden creation result:", nuevaOrden)
+      console.log("Orden creation error:", createOrden.error)
+
       if (!nuevaOrden) {
-        toast.error("Error al crear la orden")
+        const errorMessage = createOrden.error || "Error al crear la orden"
+        toast.error(errorMessage)
+        console.error("Error creating orden:", createOrden.error)
         return
       }
 
@@ -271,15 +336,20 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
                     onClick={() => setSelectedService(service.id_servicio.toString())}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-slate-800 dark:text-white">{service.nombre}</h4>
-                        <p className="text-sm text-slate-600 dark:text-slate-300">{service.descripcion || "Servicio de lavandería"}</p>
+                      <div className="flex items-center space-x-3 flex-1">
+                        {service.icon && (
+                          <div className="text-2xl">{service.icon}</div>
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-medium text-slate-800 dark:text-white">{service.nombre}</h4>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">{service.descripcion || "Servicio de lavandería"}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex items-center space-x-2">
                         <p className="font-medium text-slate-800 dark:text-white">
                           {service.precio_base > 0 ? `$${service.precio_base}` : "Incluido"}
                         </p>
-                        {selectedService === service.id_servicio.toString() && <Check className="h-5 w-5 text-blue-500 ml-auto mt-1" />}
+                        {selectedService === service.id_servicio.toString() && <Check className="h-5 w-5 text-blue-500" />}
                       </div>
                     </div>
                   </Card>
@@ -373,11 +443,11 @@ export default function NewOrderForm({ onClose, onOrderCreated }: NewOrderFormPr
               <div className="text-sm text-slate-600 dark:text-slate-300 space-y-1">
                 <p>
                   <Calendar className="h-4 w-4 inline mr-1" />
-                  Recogida: {new Date(pickupDate).toLocaleString()}
+                  Recogida: {pickupDate ? new Date(pickupDate).toLocaleString() : 'No seleccionada'}
                 </p>
                 <p>
                   <Calendar className="h-4 w-4 inline mr-1" />
-                  Entrega: {new Date(deliveryDate).toLocaleString()}
+                  Entrega: {deliveryDate ? new Date(deliveryDate).toLocaleString() : 'No seleccionada'}
                 </p>
                 <p>
                   <MapPin className="h-4 w-4 inline mr-1" />

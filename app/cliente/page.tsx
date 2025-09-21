@@ -25,7 +25,7 @@ import { useRouter } from "next/navigation"
 import SmartChatbot from "@/components/smart-chatbot"
 import GamificationSystem from "@/components/gamification-system"
 import NewOrderForm from "@/components/new-order-form"
-import { useOrdenesState } from "@/hooks/useOrdenes"
+import { useOrdenesState, Orden } from "@/hooks/useOrdenes"
 
 interface Order {
   id: string
@@ -152,7 +152,7 @@ export default function ClienteDashboard() {
                     <div key={orden.id_orden} className="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-slate-800 dark:text-white">
-                          Pedido #{orden.id_orden.slice(-6)}
+                          Pedido #{orden.id_orden ? orden.id_orden.slice(-6) : 'N/A'}
                         </span>
                         <Badge className={getStatusColor(orden.estado)}>
                           {getStatusText(orden.estado)}

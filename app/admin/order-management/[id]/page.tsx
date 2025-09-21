@@ -131,7 +131,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="font-semibold text-slate-800 dark:text-white">
-            Pedido #{orden.id_orden.slice(-6)}
+            Pedido #{orden.id_orden ? orden.id_orden.slice(-6) : 'N/A'}
           </h1>
           <Button variant="ghost" size="icon" onClick={() => refetch()} disabled={loading}>
             <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />

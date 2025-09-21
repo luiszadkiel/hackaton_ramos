@@ -12,7 +12,7 @@ import { useOrdenesState } from "@/hooks/useOrdenes"
 
 export default function OrderManagement() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
   const router = useRouter()
 
@@ -20,7 +20,7 @@ export default function OrderManagement() {
 
   useEffect(() => {
     fetchOrdenes(currentPage, 10, {
-      estado: statusFilter || undefined,
+      estado: statusFilter === "all" ? undefined : statusFilter,
     })
   }, [currentPage, statusFilter])
 
@@ -72,7 +72,7 @@ export default function OrderManagement() {
 
   const handleRefresh = () => {
     fetchOrdenes(currentPage, 10, {
-      estado: statusFilter || undefined,
+      estado: statusFilter === "all" ? undefined : statusFilter,
     })
   }
 
@@ -112,7 +112,7 @@ export default function OrderManagement() {
                   <SelectValue placeholder="Filtrar por estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los estados</SelectItem>
+                  <SelectItem value="all">Todos los estados</SelectItem>
                   <SelectItem value="pendiente">Pendiente</SelectItem>
                   <SelectItem value="confirmada">Confirmada</SelectItem>
                   <SelectItem value="en_proceso">En Proceso</SelectItem>
@@ -155,7 +155,7 @@ export default function OrderManagement() {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
                         <h3 className="font-semibold text-slate-800 dark:text-white">
-                          Pedido #{orden.id_orden.slice(-6)}
+                          Pedido #{orden.id_orden ? orden.id_orden.slice(-6) : 'N/A'}
                         </h3>
                         <Badge className={getStatusColor(orden.estado)}>
                           {getStatusText(orden.estado)}
@@ -201,7 +201,7 @@ export default function OrderManagement() {
                 No se encontraron pedidos
               </h3>
               <p className="text-slate-500 dark:text-slate-400">
-                {searchTerm || statusFilter 
+                {searchTerm || (statusFilter && statusFilter !== "all")
                   ? "Intenta ajustar los filtros de búsqueda"
                   : "No hay pedidos registrados aún"
                 }

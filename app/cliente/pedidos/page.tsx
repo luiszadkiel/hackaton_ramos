@@ -12,14 +12,14 @@ import { useOrdenesState } from "@/hooks/useOrdenes"
 
 export default function ClientePedidos() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
   const router = useRouter()
 
   const { ordenes, loading, error, fetchOrdenes } = useOrdenesState()
 
   useEffect(() => {
     fetchOrdenes(1, 20, {
-      estado: statusFilter || undefined,
+      estado: statusFilter === "all" ? undefined : statusFilter,
     })
   }, [statusFilter])
 
@@ -84,7 +84,7 @@ export default function ClientePedidos() {
 
   const handleRefresh = () => {
     fetchOrdenes(1, 20, {
-      estado: statusFilter || undefined,
+      estado: statusFilter === "all" ? undefined : statusFilter,
     })
   }
 
@@ -124,7 +124,7 @@ export default function ClientePedidos() {
                   <SelectValue placeholder="Filtrar por estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los estados</SelectItem>
+                  <SelectItem value="all">Todos los estados</SelectItem>
                   <SelectItem value="pendiente">Pendiente</SelectItem>
                   <SelectItem value="confirmada">Confirmada</SelectItem>
                   <SelectItem value="en_proceso">En Proceso</SelectItem>
@@ -168,7 +168,7 @@ export default function ClientePedidos() {
                       <span className="text-2xl">{getStatusIcon(orden.estado)}</span>
                       <div>
                         <h3 className="font-semibold text-slate-800 dark:text-white">
-                          Pedido #{orden.id_orden.slice(-6)}
+                          Pedido #{orden.id_orden ? orden.id_orden.slice(-6) : 'N/A'}
                         </h3>
                         <p className="text-sm text-slate-600 dark:text-slate-300">
                           {orden.tipo_servicio}
@@ -219,12 +219,12 @@ export default function ClientePedidos() {
                 No tienes pedidos aún
               </h3>
               <p className="text-slate-500 dark:text-slate-400 mb-4">
-                {searchTerm || statusFilter 
+                {searchTerm || (statusFilter && statusFilter !== "all")
                   ? "Intenta ajustar los filtros de búsqueda"
                   : "Crea tu primer pedido para comenzar"
                 }
               </p>
-              {!searchTerm && !statusFilter && (
+              {!searchTerm && (!statusFilter || statusFilter === "all") && (
                 <Button onClick={() => router.push("/cliente")}>
                   Crear Pedido
                 </Button>

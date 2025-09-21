@@ -46,10 +46,14 @@ export async function GET(request) {
 // POST /api/usuarios - Create a new usuario
 export async function POST(request) {
   try {
+    console.log('POST /api/usuarios - Starting request')
     const body = await request.json()
-    const { nombre, email, telefono, direccion } = body
+    console.log('POST /api/usuarios - Request body:', body)
+    
+    const { nombre, email, telefono, direccion, rol = 'cliente' } = body
 
     if (!nombre || !email) {
+      console.log('POST /api/usuarios - Missing required fields')
       return NextResponse.json(
         { error: 'Nombre and email are required' },
         { status: 400 }
@@ -59,16 +63,30 @@ export async function POST(request) {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
+      console.log('POST /api/usuarios - Invalid email format')
       return NextResponse.json(
         { error: 'Invalid email format' },
         { status: 400 }
       )
     }
 
-    const usuario = await createUsuario({ nombre, email, telefono, direccion })
+    console.log('POST /api/usuarios - Calling createUsuario with:', { nombre, email, telefono, direccion, rol })
+    const usuario = await createUsuario({ nombre, email, telefono, direccion, rol })
+    console.log('POST /api/usuarios - Created usuario:', usuario)
+    
     return NextResponse.json(usuario, { status: 201 })
   } catch (error) {
     console.error('Error in POST /api/usuarios:', error)
+    console.error('Error stack:', error.stack)
+    
+    // Manejar específicamente el error de email duplicado
+    if (error.code === '23505' && error.constraint === 'usuarios_email_key') {
+      return NextResponse.json(
+        { error: 'El email ya está registrado en el sistema' },
+        { status: 409 } // Conflict
+      )
+    }
+    
     return NextResponse.json(
       { error: 'Failed to create usuario' },
       { status: 500 }

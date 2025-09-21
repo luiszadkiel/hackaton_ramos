@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Camera, Bell, Clock, CheckCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-export default function OrderManagement({ params }: { params: { orderId: string } }) {
+export default function MachineManagement({ params }: { params: { orderId: string } }) {
   const [currentStage, setCurrentStage] = useState("Lavando")
   const [photos, setPhotos] = useState<{ before?: string; after?: string }>({})
   const [machineInfo, setMachineInfo] = useState({ name: "Lavadora #3", timeRemaining: 25 })
@@ -79,10 +79,10 @@ export default function OrderManagement({ params }: { params: { orderId: string 
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="flex items-center justify-between p-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/admin")}>
+          <Button variant="ghost" size="icon" onClick={() => router.push("/admin/machine-management")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="font-semibold text-slate-800">Pedido {params.orderId}</h1>
+          <h1 className="font-semibold text-slate-800">Gestión de Máquinas - Pedido {params.orderId}</h1>
           <div className="w-10" />
         </div>
       </div>
