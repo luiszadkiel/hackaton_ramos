@@ -19,11 +19,13 @@ import {
   MessageCircle,
   Moon,
   Sun,
+  Loader2,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import SmartChatbot from "@/components/smart-chatbot"
 import GamificationSystem from "@/components/gamification-system"
 import NewOrderForm from "@/components/new-order-form"
+import { useOrdenesState } from "@/hooks/useOrdenes"
 
 interface Order {
   id: string
@@ -45,32 +47,14 @@ export default function ClienteDashboard() {
   const [isDark, setIsDark] = useState(false)
   const [activeTab, setActiveTab] = useState("home")
   const [showNewOrderForm, setShowNewOrderForm] = useState(false)
-  const [orders, setOrders] = useState<Order[]>([])
   const router = useRouter()
 
-  useEffect(() => {
-    const savedOrders = localStorage.getItem("clientOrders")
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders))
-    }
-  }, [])
+  // Usar el hook de órdenes para obtener datos reales
+  const { ordenes, loading, error, fetchOrdenes, addOrden } = useOrdenesState()
 
   useEffect(() => {
-    const handleStorageChange = () => {
-      const savedOrders = localStorage.getItem("clientOrders")
-      if (savedOrders) {
-        setOrders(JSON.parse(savedOrders))
-      }
-    }
-
-    window.addEventListener("storage", handleStorageChange)
-
-    const interval = setInterval(handleStorageChange, 1000)
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange)
-      clearInterval(interval)
-    }
+    // Cargar órdenes al montar el componente
+    fetchOrdenes()
   }, [])
 
   const toggleTheme = () => {
@@ -78,14 +62,11 @@ export default function ClienteDashboard() {
     document.documentElement.classList.toggle("dark")
   }
 
-  const handleOrderCreated = (newOrder: Order) => {
-    const savedOrders = localStorage.getItem("clientOrders")
-    const existingOrders = savedOrders ? JSON.parse(savedOrders) : []
-    const updatedOrders = [newOrder, ...existingOrders]
-    localStorage.setItem("clientOrders", JSON.stringify(updatedOrders))
-    setOrders([...orders, newOrder])
-
-    window.dispatchEvent(new Event("storage"))
+  const handleOrderCreated = (newOrder: any) => {
+    // Agregar la nueva orden al estado local
+    addOrden(newOrder)
+    // También refrescar desde la API para obtener datos actualizados
+    fetchOrdenes()
   }
 
   const orderStages = [
@@ -152,27 +133,49 @@ export default function ClienteDashboard() {
               Nuevo Pedido
             </Button>
 
-            {
-              orders.length > 0 ? (
-                <Card className="p-6">
-                {orders?.length
-                  ? orders.map((order, oi) => (
-                      <div key={order.id + oi} className="mb-3">
-                        {Array.isArray(order.items) && order.items.length > 0 ? (
-                          order.items.map((articulo, ai) => (
-                            <p key={`${order.id ?? oi}-${ai}`}>{articulo.type}</p>
-                          ))
-                        ) : (
-                          <p className="text-sm text-slate-500"></p>
-                        )}
+            {/* Órdenes Recientes */}
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-slate-800 dark:text-white">Pedidos Recientes</h3>
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              </div>
+
+              {error && (
+                <div className="text-red-500 text-sm mb-4">
+                  Error al cargar pedidos: {error}
+                </div>
+              )}
+
+              {ordenes.length > 0 ? (
+                <div className="space-y-3">
+                  {ordenes.slice(0, 3).map((orden) => (
+                    <div key={orden.id_orden} className="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-slate-800 dark:text-white">
+                          Pedido #{orden.id_orden.slice(-6)}
+                        </span>
+                        <Badge className={getStatusColor(orden.estado)}>
+                          {getStatusText(orden.estado)}
+                        </Badge>
                       </div>
-                    ))
-                  : <p>No hay pedidos</p>}
-              </Card>
-              
-               
-              ): <p>El carrito esta vacio</p>
-            }
+                      <div className="text-sm text-slate-600 dark:text-slate-300">
+                        <p>Servicio: {orden.tipo_servicio}</p>
+                        <p>Total: ${orden.precio_total}</p>
+                        <p>Fecha: {new Date(orden.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Package className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <p className="text-slate-500 dark:text-slate-400">No tienes pedidos aún</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500">
+                    Crea tu primer pedido usando el botón de arriba
+                  </p>
+                </div>
+              )}
+            </Card>
           
             
 
@@ -240,14 +243,14 @@ export default function ClienteDashboard() {
             <Home className="h-5 w-5 mb-1" />
             <span className="text-xs">Inicio</span>
           </Button>
-          {/* <Button
+          <Button
             variant="ghost"
             className="flex flex-col items-center py-3"
             onClick={() => router.push("/cliente/pedidos")}
           >
             <Calendar className="h-5 w-5 mb-1" />
             <span className="text-xs">Pedidos</span>
-          </Button> */}
+          </Button>
           <Button
             variant="ghost"
             className={`flex flex-col items-center py-3 ${activeTab === "rewards" ? "text-blue-500" : ""}`}

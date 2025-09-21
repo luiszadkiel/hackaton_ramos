@@ -1,28 +1,46 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, BarChart3, CheckCircle, Clock, Moon, Sun, Activity, Scan } from "lucide-react"
+import { ArrowLeft, BarChart3, CheckCircle, Clock, Moon, Sun, Activity, Scan, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import OrderScanner from "@/components/order-scanner"
+import { useDashboardState } from "@/hooks/useDashboard"
+import { useOrdenesState } from "@/hooks/useOrdenes"
 
 export default function AdminDashboard() {
   const [isDark, setIsDark] = useState(false)
   const [showOrderScanner, setShowOrderScanner] = useState(false)
   const router = useRouter()
 
+  // Usar hooks de API para datos reales
+  const { stats, loading: statsLoading, error: statsError, fetchStats } = useDashboardState()
+  const { ordenes, loading: ordenesLoading, fetchOrdenes } = useOrdenesState()
+
+  useEffect(() => {
+    // Cargar estadísticas y órdenes al montar el componente
+    fetchStats(7) // Últimos 7 días
+    fetchOrdenes(1, 10) // Primera página, 10 órdenes
+  }, [])
+
   const toggleTheme = () => {
     setIsDark(!isDark)
     document.documentElement.classList.toggle("dark")
   }
 
-  const dashboardStats = {
-    activeOrders: 24,
-    completedToday: 156,
-    dailyIncome: 4750.5,
-    uniqueClients: 89,
+  // Usar datos reales o valores por defecto
+  const dashboardStats = stats ? {
+    activeOrders: stats.resumen.total_ordenes,
+    completedToday: stats.ordenes.por_estado.entregada,
+    dailyIncome: stats.ordenes.ingresos_totales,
+    uniqueClients: stats.resumen.total_usuarios,
+  } : {
+    activeOrders: 0,
+    completedToday: 0,
+    dailyIncome: 0,
+    uniqueClients: 0,
   }
 
   const machineStatus = [
@@ -31,32 +49,29 @@ export default function AdminDashboard() {
     { id: 3, name: "Secadora #1", status: "Mantenimiento", timeRemaining: null },
   ]
 
-  const pendingOrders = [
-    {
-      id: "#12345",
-      customer: "María González",
-      items: "3 camisas, 2 pantalones",
-      stage: "Lavando",
-      priority: "Normal",
-      timeInStage: "15 min",
-    },
-    {
-      id: "#12346",
-      customer: "Carlos Ruiz",
-      items: "1 vestido, 2 blusas",
-      stage: "Secando",
-      priority: "Urgente",
-      timeInStage: "25 min",
-    },
-    {
-      id: "#12347",
-      customer: "Ana Torres",
-      items: "4 camisas, 1 saco",
-      stage: "Planchado",
-      priority: "Normal",
-      timeInStage: "35 min",
-    },
-  ]
+  // Usar órdenes reales de la API
+  const pendingOrders = ordenes.slice(0, 3).map(orden => ({
+    id: orden.id_orden,
+    customer: orden.cliente_nombre || "Cliente",
+    items: orden.tipo_servicio,
+    stage: getStageFromEstado(orden.estado),
+    priority: "Normal",
+    timeInStage: "15 min",
+  }))
+
+  function getStageFromEstado(estado: string) {
+    switch (estado) {
+      case "pendiente": return "Recibido"
+      case "confirmada": return "Confirmado"
+      case "en_proceso": return "Lavando"
+      case "lista_recogida": return "Secando"
+      case "en_lavado": return "Lavando"
+      case "lista_entrega": return "Planchado"
+      case "entregada": return "Listo"
+      case "cancelada": return "Cancelado"
+      default: return estado
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -115,6 +130,19 @@ export default function AdminDashboard() {
         <div>
           <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-1">Panel de Control 📊</h2>
           <p className="text-slate-600 dark:text-slate-300">Gestión y supervisión en tiempo real</p>
+          
+          {statsError && (
+            <div className="mt-2 text-red-500 text-sm">
+              Error al cargar estadísticas: {statsError}
+            </div>
+          )}
+          
+          {statsLoading && (
+            <div className="mt-2 flex items-center text-blue-500 text-sm">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Cargando estadísticas...
+            </div>
+          )}
         </div>
 
         {/* Main Stats */}
@@ -146,10 +174,10 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-2 gap-4">
           <Button
             className="bg-blue-500 hover:bg-blue-600 text-white py-6"
-            onClick={() => router.push("/admin/machine-management")}
+            onClick={() => router.push("/admin/order-management")}
           >
-            <BarChart3 className="h-5 w-5 mr-2" />
-            Máquinas
+            <Package className="h-5 w-5 mr-2" />
+            Gestión de Pedidos
           </Button>
           <Button
             variant="outline"
@@ -198,11 +226,17 @@ export default function AdminDashboard() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-slate-800 dark:text-white">Pedidos en Proceso</h3>
-            <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">3 activos</Badge>
+            <div className="flex items-center space-x-2">
+              {ordenesLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                {ordenes.length} activos
+              </Badge>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            {pendingOrders.map((order) => (
+          {ordenes.length > 0 ? (
+            <div className="space-y-4">
+              {pendingOrders.map((order) => (
               <div key={order.id} className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -233,7 +267,13 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-500 dark:text-slate-400">No hay pedidos en proceso</p>
+            </div>
+          )}
         </Card>
 
         {/* Analytics Today */}

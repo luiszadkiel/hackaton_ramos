@@ -6,26 +6,28 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Search, RefreshCw, Loader2, Eye, Package, Calendar, DollarSign } from "lucide-react"
+import { ArrowLeft, Search, Filter, RefreshCw, Loader2, Eye, Edit } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useOrdenesState } from "@/hooks/useOrdenes"
 
-export default function ClientePedidos() {
+export default function OrderManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
   const router = useRouter()
 
   const { ordenes, loading, error, fetchOrdenes } = useOrdenesState()
 
   useEffect(() => {
-    fetchOrdenes(1, 20, {
+    fetchOrdenes(currentPage, 10, {
       estado: statusFilter || undefined,
     })
-  }, [statusFilter])
+  }, [currentPage, statusFilter])
 
   const filteredOrders = ordenes.filter(orden => {
     const matchesSearch = 
       orden.id_orden.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      orden.cliente_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       orden.tipo_servicio.toLowerCase().includes(searchTerm.toLowerCase())
     
     return matchesSearch
@@ -68,35 +70,21 @@ export default function ClientePedidos() {
     }
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "pendiente": return "⏳"
-      case "confirmada": return "✅"
-      case "en_proceso": return "🔄"
-      case "lista_recogida": return "📦"
-      case "en_lavado": return "🧼"
-      case "lista_entrega": return "🚚"
-      case "entregada": return "🎉"
-      case "cancelada": return "❌"
-      default: return "📋"
-    }
-  }
-
   const handleRefresh = () => {
-    fetchOrdenes(1, 20, {
+    fetchOrdenes(currentPage, 10, {
       estado: statusFilter || undefined,
     })
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50 dark:from-slate-900 dark:to-slate-800">
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 shadow-sm">
         <div className="flex items-center justify-between p-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/cliente")}>
+          <Button variant="ghost" size="icon" onClick={() => router.push("/admin")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="font-semibold text-slate-800 dark:text-white">Mis Pedidos</h1>
+          <h1 className="font-semibold text-slate-800 dark:text-white">Gestión de Pedidos</h1>
           <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={loading}>
             <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
@@ -111,7 +99,7 @@ export default function ClientePedidos() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Buscar por ID o servicio..."
+                  placeholder="Buscar por ID, cliente o servicio..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -143,7 +131,7 @@ export default function ClientePedidos() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
-              Mis Pedidos ({filteredOrders.length})
+              Pedidos ({filteredOrders.length})
             </h2>
             {loading && (
               <div className="flex items-center text-blue-500 text-sm">
@@ -164,46 +152,40 @@ export default function ClientePedidos() {
               {filteredOrders.map((orden) => (
                 <div key={orden.id_orden} className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">{getStatusIcon(orden.estado)}</span>
-                      <div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3">
                         <h3 className="font-semibold text-slate-800 dark:text-white">
                           Pedido #{orden.id_orden.slice(-6)}
                         </h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-300">
-                          {orden.tipo_servicio}
-                        </p>
+                        <Badge className={getStatusColor(orden.estado)}>
+                          {getStatusText(orden.estado)}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                        <p><strong>Cliente:</strong> {orden.cliente_nombre || "N/A"}</p>
+                        <p><strong>Servicio:</strong> {orden.tipo_servicio}</p>
+                        <p><strong>Total:</strong> ${orden.precio_total}</p>
+                        <p><strong>Fecha:</strong> {new Date(orden.created_at).toLocaleString()}</p>
                       </div>
                     </div>
-                    <Badge className={getStatusColor(orden.estado)}>
-                      {getStatusText(orden.estado)}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
-                    <div className="flex items-center text-sm text-slate-600 dark:text-slate-300">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      <span>{new Date(orden.created_at).toLocaleDateString()}</span>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => router.push(`/admin/order-management/${orden.id_orden}`)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver Detalles
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                        onClick={() => router.push(`/admin/order-management/${orden.id_orden}`)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Gestionar
+                      </Button>
                     </div>
-                    <div className="flex items-center text-sm text-slate-600 dark:text-slate-300">
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      <span>${orden.precio_total}</span>
-                    </div>
-                    <div className="flex items-center text-sm text-slate-600 dark:text-slate-300">
-                      <Package className="h-4 w-4 mr-2" />
-                      <span>{orden.tiempo_estimado || "N/A"}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => router.push(`/tracking/${orden.id_orden}`)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Ver Seguimiento
-                    </Button>
                   </div>
                 </div>
               ))}
@@ -216,19 +198,14 @@ export default function ClientePedidos() {
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-slate-800 dark:text-white mb-2">
-                No tienes pedidos aún
+                No se encontraron pedidos
               </h3>
-              <p className="text-slate-500 dark:text-slate-400 mb-4">
+              <p className="text-slate-500 dark:text-slate-400">
                 {searchTerm || statusFilter 
                   ? "Intenta ajustar los filtros de búsqueda"
-                  : "Crea tu primer pedido para comenzar"
+                  : "No hay pedidos registrados aún"
                 }
               </p>
-              {!searchTerm && !statusFilter && (
-                <Button onClick={() => router.push("/cliente")}>
-                  Crear Pedido
-                </Button>
-              )}
             </div>
           )}
         </Card>
