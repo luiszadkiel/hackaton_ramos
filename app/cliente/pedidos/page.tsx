@@ -356,7 +356,7 @@ export default function ClientePedidos() {
                         </div>
 
                         {/* Información adicional para resultados de búsqueda */}
-                        {searchResults.length > 0 && (
+                        {/* {searchResults.length > 0 && (
                           <div className="mb-4 p-3 bg-slate-100 dark:bg-slate-600 rounded-lg">
                             <h4 className="font-medium text-slate-800 dark:text-white mb-2">Información del Cliente:</h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
@@ -386,7 +386,7 @@ export default function ClientePedidos() {
                               )}
                             </div>
                           </div>
-                        )}
+                        )} */}
 
                         {pedido.direccion_entrega && (
                           <div className="mb-4">
