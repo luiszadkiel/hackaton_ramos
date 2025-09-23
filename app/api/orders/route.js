@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getAllOrdenes, createOrden } from '../../../lib/database'
+import { getAllOrdenes, createOrden, createOrdenCompleta } from '../../../lib/database'
 
 // GET /api/orders - Get all ordenes with filtering and pagination
 export async function GET(request) {
@@ -61,7 +61,7 @@ export async function GET(request) {
   }
 }
 
-// POST /api/orders - Create a new orden
+// POST /api/orders - Create a new orden with prendas and extras
 export async function POST(request) {
   try {
     const body = await request.json()
@@ -73,35 +73,69 @@ export async function POST(request) {
       precio_total, 
       estado = 'pendiente',
       extras_orden = null,
-      tiempo_estimado = null
+      tiempo_estimado = null,
+      prendas = [],
+      extras = []
     } = body
 
-    if (!id_usuario || !tipo_servicio || !direccion_entrega || !precio_total) {
+    console.log('POST /api/orders - Request body:', body)
+
+    // Validar campos obligatorios
+    if (!id_usuario || !tipo_servicio || !direccion_entrega || !zona_entrega || !precio_total) {
       return NextResponse.json(
-        { error: 'Usuario ID, tipo servicio, direccion entrega, and precio total are required' },
+        { error: 'Faltan campos obligatorios: id_usuario, tipo_servicio, direccion_entrega, zona_entrega, precio_total' },
         { status: 400 }
       )
     }
 
-    const orden = await createOrden({ 
-      id_usuario, 
-      tipo_servicio, 
-      direccion_entrega, 
+    // Validar prendas si existen
+    if (prendas && prendas.length > 0) {
+      for (const prenda of prendas) {
+        if (!prenda.tipo_prenda || !prenda.cantidad || !prenda.tipo_lavado || !prenda.precio_unitario) {
+          return NextResponse.json(
+            { error: 'Todas las prendas deben tener: tipo_prenda, cantidad, tipo_lavado, precio_unitario' },
+            { status: 400 }
+          )
+        }
+      }
+    }
+
+    // Validar extras si existen
+    if (extras && extras.length > 0) {
+      for (const extra of extras) {
+        if (!extra.id_extra || !extra.cantidad) {
+          return NextResponse.json(
+            { error: 'Todos los extras deben tener: id_extra, cantidad' },
+            { status: 400 }
+          )
+        }
+      }
+    }
+
+    // Crear orden completa con prendas y extras
+    const ordenCompleta = await createOrdenCompleta({
+      id_usuario,
+      tipo_servicio,
+      direccion_entrega,
       zona_entrega,
-      precio_total, 
+      precio_total,
       estado,
       extras_orden,
-      tiempo_estimado
+      tiempo_estimado,
+      prendas,
+      extras
     })
 
-    // TODO: Add prendas and extras to orden
-    // This would require additional database functions
+    console.log('POST /api/orders - Orden completa creada:', ordenCompleta.id_orden)
 
-    return NextResponse.json(orden, { status: 201 })
+    return NextResponse.json({
+      message: 'Pedido creado con éxito',
+      orden: ordenCompleta
+    }, { status: 201 })
   } catch (error) {
     console.error('Error in POST /api/orders:', error)
     return NextResponse.json(
-      { error: 'Failed to create orden' },
+      { error: error.message || 'Failed to create orden' },
       { status: 500 }
     )
   }

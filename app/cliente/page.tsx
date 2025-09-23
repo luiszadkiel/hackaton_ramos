@@ -25,7 +25,7 @@ import { useRouter } from "next/navigation"
 import SmartChatbot from "@/components/smart-chatbot"
 import GamificationSystem from "@/components/gamification-system"
 import NewOrderForm from "@/components/new-order-form"
-import { useOrdenesState, Orden } from "@/hooks/useOrdenes"
+import { useClientePedidosState, ClientePedido } from "@/hooks/useClientePedidos"
 
 interface Order {
   id: string
@@ -49,12 +49,12 @@ export default function ClienteDashboard() {
   const [showNewOrderForm, setShowNewOrderForm] = useState(false)
   const router = useRouter()
 
-  // Usar el hook de órdenes para obtener datos reales
-  const { ordenes, loading, error, fetchOrdenes, addOrden } = useOrdenesState()
+  // Usar el hook de pedidos del cliente para obtener datos reales
+  const { pedidos, loading, error, fetchPedidos, addPedido } = useClientePedidosState()
 
   useEffect(() => {
-    // Cargar órdenes al montar el componente
-    fetchOrdenes()
+    // Cargar pedidos al montar el componente
+    fetchPedidos()
   }, [])
 
   const toggleTheme = () => {
@@ -63,10 +63,10 @@ export default function ClienteDashboard() {
   }
 
   const handleOrderCreated = (newOrder: any) => {
-    // Agregar la nueva orden al estado local
-    addOrden(newOrder)
+    // Agregar el nuevo pedido al estado local
+    addPedido(newOrder)
     // También refrescar desde la API para obtener datos actualizados
-    fetchOrdenes()
+    fetchPedidos()
   }
 
   const orderStages = [
@@ -146,22 +146,22 @@ export default function ClienteDashboard() {
                 </div>
               )}
 
-              {ordenes.length > 0 ? (
+              {pedidos.length > 0 ? (
                 <div className="space-y-3">
-                  {ordenes.slice(0, 3).map((orden) => (
-                    <div key={orden.id_orden} className="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                  {pedidos.slice(0, 3).map((pedido) => (
+                    <div key={pedido.id_orden} className="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-slate-800 dark:text-white">
-                          Pedido #{orden.id_orden ? orden.id_orden.slice(-6) : 'N/A'}
+                          Pedido #{pedido.id_orden ? pedido.id_orden.slice(-6) : 'N/A'}
                         </span>
-                        <Badge className={getStatusColor(orden.estado)}>
-                          {getStatusText(orden.estado)}
+                        <Badge className={getStatusColor(pedido.estado)}>
+                          {getStatusText(pedido.estado)}
                         </Badge>
                       </div>
                       <div className="text-sm text-slate-600 dark:text-slate-300">
-                        <p>Servicio: {orden.tipo_servicio}</p>
-                        <p>Total: ${orden.precio_total}</p>
-                        <p>Fecha: {new Date(orden.created_at).toLocaleDateString()}</p>
+                        <p>Servicio: {pedido.tipo_servicio}</p>
+                        <p>Total: ${pedido.precio_total}</p>
+                        <p>Fecha: {new Date(pedido.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
                   ))}

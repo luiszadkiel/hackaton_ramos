@@ -13,7 +13,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 DEEPGRAM_API_KEY=your_deepgram_api_key_here
 ```
 
-## Solución de Problemas
+## Solución de ProblemasARDAD
 
 ### Error de FFmpeg en Windows
 Si encuentras el error `spawn ffmpeg.exe ENOENT`, el sistema ahora usa una versión simplificada que envía el audio directamente a OpenAI sin conversión FFmpeg. Esto es más compatible con Windows y funciona para la mayoría de casos de uso.

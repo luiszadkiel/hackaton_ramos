@@ -37,3 +37,5 @@ console.log('   1. Ejecuta: npm run dev');
 console.log('   2. Ve a: http://localhost:3000/cliente/chat');
 console.log('   3. Prueba enviar un mensaje de texto');
 console.log('   4. Prueba grabar un audio');
+
+

@@ -34,3 +34,5 @@ console.log('   - Problema con el TTS del navegador');
 console.log('\n🎯 El sistema debería funcionar ahora!');
 
 
+
+
